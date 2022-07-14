@@ -9,7 +9,7 @@ class MaxCutEnv(object):
 
     Observation:
         An ordered list of nodes that represents a partial solution
-        + adjacent matrix
+        together with a graph laplacian matrix
 
     Action:
         Adding a new node (v) to the partial solution
@@ -69,7 +69,7 @@ class MaxCutEnv(object):
 
 
     def step(self, action: int):
-        """Run one time step of the environment's dynamics"""
+        """Runs one time step of the environment's dynamics"""
         reward = 0
         score = 0
         done = False
@@ -90,9 +90,9 @@ class MaxCutEnv(object):
         score = self._calculate_score(state[0, :], self.laplacian_matrix)
         delta_score = score - last_score
 
-        # if score > self.best_score:
-        #     self.best_score = score
-        #     self.best_solution = state
+        if score > self.best_score:
+            self.best_score = score
+            self.best_solution = state
 
         ############################################################
         # 2. Calculate the reward for the action                   #
@@ -104,10 +104,11 @@ class MaxCutEnv(object):
         ############################################################
         # 3. Check termination criteria                            #
         ############################################################
+        # TODO: fix termination criteria
         if len(self.action_space.action_list) == 1:
             done = True
 
-        return np.vstack((self.state, self.laplacian_matrix)), reward, done, {}
+        return np.vstack((self.state, self.laplacian_matrix)), reward, done, {"best solution": self.best_solution}
 
 
     def reset(self):
@@ -137,7 +138,7 @@ class MaxCutEnv(object):
 
     def _calculate_score(self, state, laplacian_matrix):
         x = state*2 - 1 # convert 0 -> -1, 1 -> 1
-        return (1/4)*np.sum(np.multiply(laplacian_matrix, 1-np.outer(x, x)))
+        return (1/4)*np.dot(np.dot(x, laplacian_matrix), x) # 1/4 x^T L x
 
     # def _calculate_score_change(self, next_state, action, laplacian_matrix):
     #     # raise NotImplementedError
