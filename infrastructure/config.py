@@ -6,6 +6,7 @@ class Config(object):
         # self.requirements_to_solve_game = None
         self.num_episodes_to_run = None
         self.num_steps_per_episode = None
+        self.log_metrics = None
         # self.file_to_save_results_data = None
         # self.file_to_save_results_graph = None
         # self.runs_per_agent = None

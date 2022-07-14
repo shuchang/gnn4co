@@ -12,11 +12,12 @@ config.seed = 1
 config.env_name = "MaxCut"
 config.num_episodes_to_run = 30
 config.num_steps_per_episode = 1
+config.log_metrics = True
 config.use_GPU = False
 config.which_GPU = 0
 config.randomize_random_seed = True
 config.hyperparameters = {
-    "batch_size": 16,
+    "batch_size": 8,
     "buffer_size": 10000000,
     "learning_rate": 0.05,
     "hidden_size": 30,
