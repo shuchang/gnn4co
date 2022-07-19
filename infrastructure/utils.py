@@ -1,5 +1,7 @@
 import numpy as np
 import networkx as nx
+import torch_geometric as pyg
+from infrastructure import pytorch_utils as ptu
 
 
 class GraphGenerator(object):
@@ -34,8 +36,15 @@ class BarabasiAlbertGraphGenerator(GraphGenerator):
         super().__init__(n_nodes)
         self.m_edges = m_edges
 
+    def reset(self):
+        self.g = nx.barabasi_albert_graph(self.n_nodes, self.m_edges)
+
     def get_laplacian(self):
         # adj for training, laplacian for max cut
-        g = nx.barabasi_albert_graph(self.n_nodes, self.m_edges)
-        laplacian_matrix = nx.laplacian_matrix(g).toarray()
+        laplacian_matrix = nx.laplacian_matrix(self.g).toarray()
         return laplacian_matrix
+
+    def get(self, state):
+        data =  pyg.utils.from_networkx(self.g)
+        data.x = ptu.from_numpy(state)
+        return data

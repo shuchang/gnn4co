@@ -1,6 +1,6 @@
 from agents.base_agent import BaseAgent
 from infrastructure.replay_buffer import ReplayBuffer
-from policies.mlp_policy import MLPPolicy
+from policies.gat_policy import GATPolicy
 import numpy as np
 
 
@@ -12,8 +12,7 @@ class PGAgent(BaseAgent):
 
         self.gamma = self.hyperparameters["discount_rate"]
 
-        # actor/policy
-        self.actor = MLPPolicy(
+        self.actor = GATPolicy(
             self.hyperparameters["ob_dim"],
             self.hyperparameters["ac_dim"],
             self.hyperparameters["n_hidden_layers"],
@@ -30,24 +29,25 @@ class PGAgent(BaseAgent):
         return self.replay_buffer.sample_recent_data(batch_size, return_full_trajectory=True)
 
 
-    def train(self, obs, acs, res, next_obs, dones) -> dict:
+    def train(self, obs, acs, rews, next_obs, dones) -> dict:
         """train the policy gradient agent with MLP policy\n
             params:
-                obs: np.ndarray\n
+                obs: torch_geometric.data\n
                 acs: np.ndarray\n
-                res: np.ndarray\n
+                rews: np.ndarray\n
                 next_obs: np.ndarray\n
                 dones: np.ndarray\n
             returns:
                 train_log: dict
         """
-        discounted_return = self._calculate_discounted_return(res)
+        discounted_return = self._calculate_discounted_return(rews)
         train_log = self.actor.update(obs, acs, discounted_return)
         return train_log
 
 
     # def save(self, path):
     #     self.actor.save(path)
+
 
     #####################################################
     ################## HELPER FUNCTIONS #################

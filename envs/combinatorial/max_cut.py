@@ -8,8 +8,7 @@ class MaxCutEnv(object):
     """Environment for the MaxCut problem
 
     Observation:
-        An ordered list of nodes that represents a partial solution
-        together with a graph laplacian matrix
+        A graph data with node feature (x) and edge index
 
     Action:
         Adding a new node (v) to the partial solution
@@ -25,13 +24,12 @@ class MaxCutEnv(object):
         Cut weight cannot be improved
     """
 
-    # Note these are defined at the class level of SpinSystem to ensure that SpinSystem
-    # can be pickled.
-    class Action_Space(object):
+
+    class ActionSpace(object):
         """Implements the discrete action space"""
-        def __init__(self, n_actions):
-            self.n = n_actions
-            self.action_list = list(range(self.n))
+        def __init__(self, n_nodes):
+            self.shape = [n_nodes, 1]
+            self.action_list = None
 
         def contains(self, action):
             return True if action in self.action_list else False
@@ -40,16 +38,20 @@ class MaxCutEnv(object):
             self.action_list.remove(action)
 
         def reset(self):
-            self.action_list = list(range(self.n))
+            self.action_list = list(range(self.shape[0]))
 
         def sample(self):
-            """Returns a randomly sampled action"""
             return random.choice(self.action_list)
 
-    class Observation_Space(object):
+
+    class ObservationSpace(object):
         """Implements the multi-binary observation space"""
         def __init__(self, n_nodes):
             self.shape = [n_nodes, 1]
+            self.state = None
+
+        def reset(self):
+            self.state = np.zeros(self.shape)
 
 
     def __init__(self, n_nodes, m_edges):
@@ -57,10 +59,10 @@ class MaxCutEnv(object):
         self.n_nodes = n_nodes
         self.graph_generator = BarabasiAlbertGraphGenerator(n_nodes, m_edges)
 
-        self.action_space = self.Action_Space(self.n_nodes)
-        self.observation_space = self.Observation_Space(self.n_nodes)
+        self.action_space = self.ActionSpace(self.n_nodes)
+        self.observation_space = self.ObservationSpace(self.n_nodes)
 
-        self.state = None
+        self.graph = None
         self.laplacian_matrix = None
 
         self.current_step = None
@@ -68,26 +70,28 @@ class MaxCutEnv(object):
         self.best_solution = None
 
 
-    def step(self, action: int):
+    def step(self, action):
         """Runs one time step of the environment's dynamics"""
         reward = 0
         score = 0
         done = False
 
-        assert self.action_space.contains(action)
+        assert self.action_space.contains(action), ...
+        "picked action must be in the action space"
         self.action_space.remove(action)
 
         self.current_step += 1
-        state = np.copy(self.state)
-        last_score = self._calculate_score(state[0, :], self.laplacian_matrix)
+        state = np.copy(self.observation_space.state)
+        last_score = self._calculate_score(state[:, 0], self.laplacian_matrix)
 
         ############################################################
         # 1. Performs the action and calculates the score change   #
         ############################################################
-        state[0, action] = 1
-        self.state = state
+        state[action, 0] = 1
+        self.observation_space.state = state
+        self.graph = self.graph_generator.get(state)
 
-        score = self._calculate_score(state[0, :], self.laplacian_matrix)
+        score = self._calculate_score(state[:, 0], self.laplacian_matrix)
         delta_score = score - last_score
 
         if score > self.best_score:
@@ -108,26 +112,25 @@ class MaxCutEnv(object):
         if len(self.action_space.action_list) == 1:
             done = True
 
-        return np.vstack((self.state, self.laplacian_matrix)), reward, done, {"best solution": self.best_solution}
+        return self.graph, reward, done, {"best solution": self.best_solution}
 
 
     def reset(self):
-        """Resets the state of the environment and returns an initial observation"""
+        """Resets the state of the environment and returns the
+        `torch_geometric.data.Data` as an observation"""
+        self.action_space.reset()
+        self.observation_space.reset()
+        self.graph_generator.reset()
         self.current_step = 0
         self.best_score = 0
 
-        # reset action space
-        self.action_space.reset()
-        # reset observation space
-        self.state = np.zeros((self.observation_space.shape[1], self.n_nodes))
+        self.graph = self.graph_generator.get(self.observation_space.state)
         self.laplacian_matrix = self.graph_generator.get_laplacian()
-
-        return np.vstack((self.state, self.laplacian_matrix))
+        return self.graph
 
 
     def seed(self, seed):
-        """Sets the seed for this env's random number generator(s)"""
-        self.seed = seed
+        """Sets the seed for this env"""
         np.random.seed(seed)
         random.seed(seed)
 
@@ -138,7 +141,7 @@ class MaxCutEnv(object):
 
     def _calculate_score(self, state, laplacian_matrix):
         x = state*2 - 1 # convert 0 -> -1, 1 -> 1
-        return (1/4)*np.dot(np.dot(x, laplacian_matrix), x) # 1/4 x^T L x
+        return (1/4) * np.dot(np.dot(x, laplacian_matrix), x)
 
     # def _calculate_score_change(self, next_state, action, laplacian_matrix):
     #     # raise NotImplementedError

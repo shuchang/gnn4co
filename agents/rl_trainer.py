@@ -19,21 +19,23 @@ class Trainer(object):
         #############
         if config.randomize_random_seed:
             config.seed = random.randint(0, 2**32-2)
-        self.config = config
+
+        self.log_metrics = config.log_metrics
+        self.batch_size = config.hyperparameters["batch_size"]
+        self.n_episodes_to_run = config.n_episodes_to_run
+        self.n_steps_per_episode = config.n_steps_per_episode
+
         self.set_random_seeds(config.seed)
         ptu.init_gpu(config.use_GPU, config.which_GPU)
 
         #############
         ## ENV
         #############
-        self.env = co_env.make(config.env_name, n_nodes=4, m_edges=2)
+        self.env = co_env.make(config.env_name, n_nodes=20, m_edges=12)
         self.env.seed(config.seed)
 
-        # observation and action space size
-        ob_dim = self.env.observation_space.shape[0]
-        ac_dim = self.env.action_space.n
-        config.hyperparameters["ob_dim"] = ob_dim
-        config.hyperparameters["ac_dim"] = ac_dim
+        config.hyperparameters["ob_dim"] = self.env.observation_space.shape[1]
+        config.hyperparameters["ac_dim"] = self.env.action_space.shape[1]
 
         #############
         ## AGENT
@@ -43,55 +45,50 @@ class Trainer(object):
 
     def run_training_loop(self):
         """Runs a set of training loops for the agent"""
-        batch_size = self.config.hyperparameters["batch_size"]
         self.total_env_steps = 0
-        self.start_time = time.time()
+        # self.start_time = time.time()
 
-        for ep in range(self.config.num_episodes_to_run):
+        for ep in range(self.n_episodes_to_run):
             print("\n\n********** Episode %i ************"%ep)
-            print("Collecting data for train...\n")
-            trajectories, env_steps = self.collect_trajectories(batch_size)
+            print("Collecting data for train ...\n")
+            trajectories, env_steps = self.collect_trajectories()
             self.total_env_steps += env_steps
 
             self.agent.add_to_replay_buffer(trajectories)
-            train_logs = self.train_agent(batch_size)
+            train_logs = self.train_agent()
 
-            if self.config.log_metrics:
+            if self.log_metrics:
                 self.perform_logging(trajectories, train_logs)
 
 
-    def collect_trajectories(self, batch_size):
-        """Collects a batch of trajectories for training"""
+    def collect_trajectories(self):
+        """Collects a batch of trajectories"""
         env_steps = 0
         trajectories = []
 
-        while env_steps < batch_size:
+        while env_steps < self.batch_size:
             trajectory = self.collect_trajectory()
             # env_steps += len(trajectory["reward"])
             env_steps += trajectory["reward"].shape[0]
             trajectories.append(trajectory)
-
         return trajectories, env_steps
 
 
-    def collect_trajectory(self) -> dict:
+    def collect_trajectory(self):
         """Collects one trajectory by letting the agent interact with the env"""
-        obs, acs, res, next_obs, dones = [], [], [], [], []
+        obs, acs, rews, next_obs, dones = [], [], [], [], []
         steps = 0
         ob = self.env.reset()
-        # print(ob[1:,])
 
         while True:
-            # agent's turn to interact
             action_list = self.env.action_space.action_list
             ac = self.agent.actor.get_action(ob, action_list)
             obs.append(ob)
             acs.append(ac)
 
-            # env's turn to interact
-            ob, re, done, sol = self.env.step(ac)
+            ob, rew, done, sol = self.env.step(ac)
             steps += 1
-            res.append(re)
+            rews.append(rew)
             next_obs.append(ob)
             # for key, value in sol.items():
             #     print('{}: {}'.format(key, value))
@@ -101,31 +98,29 @@ class Trainer(object):
             if rollout_done:
                 break
 
-        return {"observation" : np.array(obs, dtype=np.float32),
+        return {"observation" : obs,
                 "action" : np.array(acs, dtype=np.float32),
-                "reward" : np.array(res, dtype=np.float32),
-                "next_observation": np.array(next_obs, dtype=np.float32),
+                "reward" : np.array(rews, dtype=np.float32),
+                "next_observation": next_obs,
                 "done": np.array(dones, dtype=np.float32)}
 
 
-    def train_agent(self, batch_size):
+    def train_agent(self):
         """Samples from the replay buffer and trains the agent"""
         all_logs = []
 
-        for _ in range(self.config.num_steps_per_episode):
-            obs, acs, res, next_obs, dones = self.agent.sample_from_replay_buffer(batch_size)
-            train_log = self.agent.train(obs, acs, res, next_obs, dones)
+        for _ in range(self.n_steps_per_episode):
+            train_data = self.agent.sample_from_replay_buffer(self.batch_size)
+            obs, acs, rews, next_obs, dones = train_data
+            train_log = self.agent.train(obs, acs, rews, next_obs, dones)
             all_logs.append(train_log)
-
         return all_logs
 
 
     def perform_logging(self, trajectories, train_logs):
         """Returns the training and evaluating logs for each batch of data"""
-        batch_size = self.config.hyperparameters["batch_size"]
-
-        print("Collecting data for eval...\n")
-        eval_trajectories, _ = self.collect_trajectories(batch_size)
+        print("Collecting data for eval ...\n")
+        eval_trajectories, _ = self.collect_trajectories()
 
         train_returns = [trajectory["reward"].sum() for trajectory in trajectories]
         eval_returns = [eval_trajectory["reward"].sum() for eval_trajectory in eval_trajectories]
@@ -135,12 +130,10 @@ class Trainer(object):
         logs["Eval_StdReturn"] = np.std(eval_returns)
         logs["Eval_MaxReturn"] = np.max(eval_returns)
         logs["Eval_MinReturn"] = np.min(eval_returns)
-
         logs["Train_AverageReturn"] = np.mean(train_returns)
         logs["Train_StdReturn"] = np.std(train_returns)
         logs["Train_MaxReturn"] = np.max(train_returns)
         logs["Train_MinReturn"] = np.min(train_returns)
-
         logs.update(train_logs[-1]) # last log in all logs
 
         for key, value in logs.items():

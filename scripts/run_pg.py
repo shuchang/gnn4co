@@ -10,17 +10,17 @@ from infrastructure.config import Config
 config = Config()
 config.seed = 1
 config.env_name = "MaxCut"
-config.num_episodes_to_run = 30
-config.num_steps_per_episode = 1
+config.n_episodes_to_run = 30
+config.n_steps_per_episode = 1
 config.log_metrics = True
 config.use_GPU = False
 config.which_GPU = 0
 config.randomize_random_seed = True
 config.hyperparameters = {
-    "batch_size": 8,
+    "batch_size": 128,
     "buffer_size": 10000000,
-    "learning_rate": 0.05,
-    "hidden_size": 30,
+    "learning_rate": 0.01,
+    "hidden_size": 32,
     "n_hidden_layers": 2,
     "activation": "tanh",
     "output_activation": "identity",
