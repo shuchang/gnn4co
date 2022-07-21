@@ -3,7 +3,7 @@ from os.path import dirname, abspath
 sys.path.append(dirname(dirname(abspath(__file__))))
 
 from agents.pg_agent import PGAgent
-from agents.rl_trainer import Trainer
+from infrastructure.rl_trainer import Trainer
 from infrastructure.config import Config
 
 
