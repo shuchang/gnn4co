@@ -10,7 +10,7 @@ import envs.core as co_env
 
 
 class Trainer(object):
-    """Runs experiments for given agents, and optionally visualizes and saves the results"""
+    """Runs experiments for given agents and saves the results"""
 
     def __init__(self, config, agent_class):
 
@@ -31,7 +31,7 @@ class Trainer(object):
         #############
         ## ENV
         #############
-        self.env = co_env.make(config.env_name, n_nodes=20, m_edges=12)
+        self.env = co_env.make(config.env_name, n_nodes=20, m_edges=4)
         self.env.seed(config.seed)
 
         config.hyperparameters["ob_dim"] = self.env.observation_space.shape[1]
@@ -110,8 +110,8 @@ class Trainer(object):
         all_logs = []
 
         for _ in range(self.n_steps_per_episode):
-            train_data = self.agent.sample_from_replay_buffer(self.batch_size)
-            obs, acs, rews, next_obs, dones = train_data
+            transitions = self.agent.sample_from_replay_buffer(self.batch_size)
+            obs, acs, rews, next_obs, dones = transitions
             train_log = self.agent.train(obs, acs, rews, next_obs, dones)
             all_logs.append(train_log)
         return all_logs

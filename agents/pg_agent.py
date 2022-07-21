@@ -30,12 +30,12 @@ class PGAgent(BaseAgent):
 
 
     def train(self, obs, acs, rews, next_obs, dones) -> dict:
-        """train the policy gradient agent with MLP policy\n
+        """trains the policy gradient agent with MLP policy\n
             params:
-                obs: torch_geometric.data\n
+                obs: list\n
                 acs: np.ndarray\n
                 rews: np.ndarray\n
-                next_obs: np.ndarray\n
+                next_obs: list\n
                 dones: np.ndarray\n
             returns:
                 train_log: dict

@@ -53,9 +53,16 @@ class GATPolicy(BasePolicy, nn.Module):
 
 
     def update(self, obs, actions, rewards, **kwargs):
-        loader = Batch.from_data_list(obs)
+        """updates the weights of the policy\n
+            params:
+                obs: list\n
+                acs: np.ndarray\n
+                rews: np.ndarray\n
+            returns:
+                train_log: dict
+        """
         batch_size = len(obs)
-
+        loader = Batch.from_data_list(obs)
         actions = ptu.from_numpy(actions)
         rewards = ptu.from_numpy(rewards)
 
@@ -65,9 +72,7 @@ class GATPolicy(BasePolicy, nn.Module):
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-
-        train_log = {"Training Loss": ptu.to_numpy(loss)}
-        return train_log
+        return {"Training Loss": ptu.to_numpy(loss)}
 
 
     def save(self, filepath: str):
