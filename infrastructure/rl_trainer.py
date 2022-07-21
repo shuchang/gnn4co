@@ -46,7 +46,7 @@ class RLTrainer(object):
     def run_training_loop(self):
         """Runs a set of training loops for the agent"""
         self.total_env_steps = 0
-        # self.start_time = time.time()
+        self.start_time = time.time()
 
         for ep in range(self.n_episodes_to_run):
             print("\n\n********** Episode %i ************"%ep)
@@ -122,18 +122,28 @@ class RLTrainer(object):
         print("Collecting data for eval ...\n")
         eval_trajectories, _ = self.collect_trajectories()
 
-        train_returns = [trajectory["reward"].sum() for trajectory in trajectories]
-        eval_returns = [eval_trajectory["reward"].sum() for eval_trajectory in eval_trajectories]
+        train_returns = [t["reward"].sum() for t in trajectories]
+        eval_returns = [eval_t["reward"].sum() for eval_t in eval_trajectories]
+
+        # episode lengths, for logging
+        train_ep_lens = [len(t["reward"]) for t in trajectories]
+        eval_ep_lens = [len(eval_t["reward"]) for eval_t in eval_trajectories]
 
         logs = OrderedDict()
         logs["Eval_AverageReturn"] = np.mean(eval_returns)
         logs["Eval_StdReturn"] = np.std(eval_returns)
         logs["Eval_MaxReturn"] = np.max(eval_returns)
         logs["Eval_MinReturn"] = np.min(eval_returns)
+        logs["Eval_AverageEpLen"] = np.mean(eval_ep_lens)
+
         logs["Train_AverageReturn"] = np.mean(train_returns)
         logs["Train_StdReturn"] = np.std(train_returns)
         logs["Train_MaxReturn"] = np.max(train_returns)
         logs["Train_MinReturn"] = np.min(train_returns)
+        logs["Train_AverageEpLen"] = np.mean(train_ep_lens)
+
+        logs["Train_EnvstepsSoFar"] = self.total_env_steps
+        logs["TimeSinceStart"] = time.time() - self.start_time
         logs.update(train_logs[-1]) # last log in all logs
 
         for key, value in logs.items():
