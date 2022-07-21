@@ -3,7 +3,7 @@ from os.path import dirname, abspath
 sys.path.append(dirname(dirname(abspath(__file__))))
 
 from agents.pg_agent import PGAgent
-from infrastructure.rl_trainer import Trainer
+from infrastructure.rl_trainer import RLTrainer
 from infrastructure.config import Config
 
 
@@ -29,5 +29,5 @@ config.hyperparameters = {
 
 if __name__ == "__main__":
     AGENTS = PGAgent # class import from agents.xxx
-    trainer = Trainer(config, AGENTS)
+    trainer = RLTrainer(config, AGENTS)
     trainer.run_training_loop()

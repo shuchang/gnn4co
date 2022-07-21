@@ -9,7 +9,7 @@ from infrastructure import pytorch_utils as ptu
 import envs.core as co_env
 
 
-class Trainer(object):
+class RLTrainer(object):
     """Runs experiments for given agents and saves the results"""
 
     def __init__(self, config, agent_class):
