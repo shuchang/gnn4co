@@ -76,7 +76,7 @@ class MaxCutEnv(object):
         score = 0
         done = False
 
-        assert self.action_space.contains(action), ...
+        assert self.action_space.contains(action), \
         "picked action must be in the action space"
         self.action_space.remove(action)
 

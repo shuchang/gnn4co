@@ -6,7 +6,6 @@ class BaseAgent(object):
 
         self.config = config
         self.hyperparameters = config.hyperparameters
-        # self.environment = config.env_name
 
         self.replay_buffer = ReplayBuffer(
             buffer_size=self.hyperparameters["buffer_size"],
@@ -21,7 +20,7 @@ class BaseAgent(object):
         """Draws samples of trajectories from the replay buffer"""
         raise NotImplementedError
 
-    def train(self, obs, acs, res, next_obs, dones) -> dict:
+    def train(self, obs, acs, rews, next_obs, dones) -> dict:
         """Return a dictionary of logging information"""
         raise NotImplementedError
 

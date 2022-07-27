@@ -1,7 +1,6 @@
-from agents.base_agent import BaseAgent
-from infrastructure.replay_buffer import ReplayBuffer
-from policies.gat_policy import GATPolicy
 import numpy as np
+from policies.gat_policy import GATPolicy
+from agents.base_agent import BaseAgent
 
 
 class PGAgent(BaseAgent):
@@ -11,17 +10,7 @@ class PGAgent(BaseAgent):
         BaseAgent.__init__(self, config)
 
         self.gamma = self.hyperparameters["discount_rate"]
-
-        self.actor = GATPolicy(
-            self.hyperparameters["ob_dim"],
-            self.hyperparameters["ac_dim"],
-            self.hyperparameters["n_hidden_layers"],
-            self.hyperparameters["hidden_size"],
-            self.hyperparameters["learning_rate"])
-
-        self.replay_buffer = ReplayBuffer(
-            self.hyperparameters["buffer_size"],
-            self.hyperparameters["batch_size"])
+        self.actor = GATPolicy(self.hyperparameters)
 
 
     def sample_from_replay_buffer(self, batch_size):
@@ -29,8 +18,8 @@ class PGAgent(BaseAgent):
         return self.replay_buffer.sample_recent_data(batch_size, return_full_trajectory=True)
 
 
-    def train(self, obs, acs, rews, next_obs, dones) -> dict:
-        """trains the policy gradient agent with MLP policy\n
+    def train(self, obs, acs, rews, next_obs, dones):
+        """Trains the policy gradient agent\n
             params:
                 obs: list\n
                 acs: np.ndarray\n
@@ -45,18 +34,14 @@ class PGAgent(BaseAgent):
         return train_log
 
 
-    # def save(self, path):
-    #     self.actor.save(path)
+    def save(self, path):
+        self.actor.save(path)
 
-
-    #####################################################
-    ################## HELPER FUNCTIONS #################
-    #####################################################
 
     def _calculate_discounted_return(self, rewards: np.ndarray) -> np.ndarray:
         """Calculates the discounted returns for list of trajectories\n
             Input:
-                np.ndarray of rewards {r_0, r_1, ..., r_T} for a single trajectory of len T \n
+                np.ndarray of rewards {r_0, r_1, ..., r_T} for a single trajectory of len T\n
             Output:
                 np.ndarray where each index t contains sum_{t'=0}^T gamma^{t'} r_{t'}
         """

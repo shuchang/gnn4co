@@ -4,7 +4,7 @@ class Config(object):
         self.seed = None
         self.env_name = None
         # self.requirements_to_solve_game = None
-        self.n_episodes_to_run = None
+        self.n_episodes = None
         self.n_steps_per_episode = None
         self.log_metrics = None
         # self.file_to_save_results_data = None

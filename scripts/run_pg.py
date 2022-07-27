@@ -10,7 +10,7 @@ from infrastructure.config import Config
 config = Config()
 config.seed = 1
 config.env_name = "MaxCut"
-config.n_episodes_to_run = 30
+config.n_episodes = 30
 config.n_steps_per_episode = 1
 config.log_metrics = True
 config.use_GPU = False
@@ -28,6 +28,6 @@ config.hyperparameters = {
 
 
 if __name__ == "__main__":
-    AGENTS = PGAgent # class import from agents.xxx
+    AGENTS = PGAgent
     trainer = RLTrainer(config, AGENTS)
     trainer.run_training_loop()
