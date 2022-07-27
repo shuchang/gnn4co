@@ -4,6 +4,7 @@ import torch
 import random
 import time
 import numpy as np
+from agents.dqn_agent import DQNAgent
 from infrastructure import pytorch_utils as ptu
 # from tensorboardX import SummaryWriter
 import envs.core as co_env
@@ -19,14 +20,16 @@ class RLTrainer(object):
         #############
         if config.randomize_random_seed:
             config.seed = random.randint(0, 2**32-2)
+        self.set_random_seeds(config.seed)
+        ptu.init_gpu(config.use_GPU, config.which_GPU)
 
         self.log_metrics = config.log_metrics
         self.batch_size = config.hyperparameters["batch_size"]
-        self.n_episodes_to_run = config.n_episodes_to_run
+        self.n_episodes = config.n_episodes
         self.n_steps_per_episode = config.n_steps_per_episode
 
-        self.set_random_seeds(config.seed)
-        ptu.init_gpu(config.use_GPU, config.which_GPU)
+        if agent_class == DQNAgent:
+            self.epsilon = config.hyperparameters["exploration_rate"]
 
         #############
         ## ENV
@@ -47,18 +50,24 @@ class RLTrainer(object):
         """Runs a set of training loops for the agent"""
         self.total_env_steps = 0
         self.start_time = time.time()
+        update_frequency = 32 if isinstance(self.agent, DQNAgent) else 1
 
-        for ep in range(self.n_episodes_to_run):
-            print("\n\n********** Episode %i ************"%ep)
-            print("Collecting data for train ...\n")
+        for ep in range(self.n_episodes):
+
+            if ep % update_frequency == 0:
+                print("\n\n********** Episode %i ************"%ep)
+                print("Collecting data for train ...\n")
+
             trajectories, env_steps = self.collect_trajectories()
             self.total_env_steps += env_steps
-
             self.agent.add_to_replay_buffer(trajectories)
-            train_logs = self.train_agent()
 
-            if self.log_metrics:
-                self.perform_logging(trajectories, train_logs)
+            if ep % update_frequency == 0:
+                print("Training agent ...\n")
+                train_logs = self.train_agent()
+
+                if self.log_metrics:
+                    self.perform_logging(trajectories, train_logs)
 
 
     def collect_trajectories(self):
@@ -82,15 +91,18 @@ class RLTrainer(object):
 
         while True:
             action_list = self.env.action_space.action_list
-            ac = self.agent.actor.get_action(ob, action_list)
+            if isinstance(self.agent, DQNAgent) and np.random.random() < self.epsilon:
+                ac = self.env.action_space.sample()
+            else:
+                ac = self.agent.actor.get_action(ob, action_list)
             obs.append(ob)
             acs.append(ac)
 
-            ob, rew, done, sol = self.env.step(ac)
+            ob, rew, done, info = self.env.step(ac)
             steps += 1
             rews.append(rew)
             next_obs.append(ob)
-            # for key, value in sol.items():
+            # for key, value in info.items():
             #     print('{}: {}'.format(key, value))
 
             rollout_done = 1 if done else 0 # or steps == max_trajectory_length

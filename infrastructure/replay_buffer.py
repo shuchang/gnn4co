@@ -42,11 +42,13 @@ class ReplayBuffer(object):
     def sample_random_data(self, batch_size):
         """Draws a random sample from the replay buffer, for Value-based agents"""
         indices = np.random.permutation(self.acs.shape[0])[:batch_size]
-        return (self.obs[indices],
-                self.acs[indices],
-                self.rews[indices],
-                self.next_obs[indices],
-                self.dones[indices])
+        obs = []
+        next_obs = []
+
+        for idx in indices.tolist():
+            obs.append(self.obs[idx])
+            next_obs.append(self.next_obs[idx])
+        return obs, self.acs[indices], self.rews[indices], next_obs, self.dones[indices]
 
 
     def sample_recent_data(self, batch_size, return_full_trajectory=True):
