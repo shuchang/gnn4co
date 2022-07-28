@@ -91,6 +91,7 @@ class RLTrainer(object):
 
         while True:
             action_list = self.env.action_space.action_list
+            
             if isinstance(self.agent, DQNAgent) and np.random.random() < self.epsilon:
                 ac = self.env.action_space.sample()
             else:

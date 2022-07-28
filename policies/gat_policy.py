@@ -165,6 +165,9 @@ class GATCritic(BasePolicy, nn.Module):
 
         self.optimizer.zero_grad()
         loss.backward()
+    
+        if self.grad_norm_clipping is not None: # Optional gradient clipping
+            nn.utils.clip_grad_value_(self.network.parameters(), self.grad_norm_clipping)
         self.optimizer.step()
         return {"Training Loss": ptu.to_numpy(loss)}
 

@@ -25,7 +25,7 @@ config.hyperparameters = {
     "discount_rate": 0.99,
     "exploration_rate": 0.8,
     "double_q": True,
-    "grad_norm_clipping":10}
+    "grad_norm_clipping": None}
 
 
 if __name__ == "__main__":
