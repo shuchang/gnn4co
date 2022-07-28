@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 
 from torch import nn, optim, distributions
@@ -17,11 +16,11 @@ class GATPolicy(BasePolicy, nn.Module):
 
         self.ob_dim = hyperparameters["ob_dim"]
         self.ac_dim = hyperparameters["ac_dim"]
-        # self.n_hidden_layers = hyperparameters["n_hidden_layers"]
+        self.n_layers = hyperparameters["n_layers"]
         self.hidden_size = hyperparameters["hidden_size"]
         self.learning_rate = hyperparameters["learning_rate"]
 
-        self.network = GAT(self.ob_dim, self.hidden_size, self.ac_dim, heads=1)
+        self.network = GAT(self.ob_dim, self.n_layers, self.hidden_size, self.ac_dim)
         self.network.to(ptu.device)
         self.optimizer = optim.Adam(self.network.parameters(), self.learning_rate)
 
@@ -89,7 +88,7 @@ class GATCritic(BasePolicy, nn.Module):
 
         self.ob_dim = hyperparameters["ob_dim"]
         self.ac_dim = hyperparameters["ac_dim"]
-        # self.n_hidden_layers = hyperparameters["n_hidden_layers"]
+        self.n_layers = hyperparameters["n_layers"]
         self.hidden_size = hyperparameters["hidden_size"]
         self.learning_rate = hyperparameters["learning_rate"]
 
@@ -97,9 +96,9 @@ class GATCritic(BasePolicy, nn.Module):
         self.grad_norm_clipping = hyperparameters["grad_norm_clipping"]
         self.gamma = hyperparameters["discount_rate"]
 
-        self.network = GAT(self.ob_dim, self.hidden_size, self.ac_dim, heads=1)
+        self.network = GAT(self.ob_dim, self.n_layers, self.hidden_size, self.ac_dim)
         self.network.to(ptu.device)
-        self.target_network = GAT(self.ob_dim, self.hidden_size, self.ac_dim, heads=1)
+        self.target_network = GAT(self.ob_dim, self.n_layers, self.hidden_size, self.ac_dim)
         self.target_network.to(ptu.device)
 
         self.optimizer = optim.Adam(self.network.parameters(), self.learning_rate)

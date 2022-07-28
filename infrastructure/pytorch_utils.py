@@ -53,14 +53,27 @@ def build_mlp(input_size: int, output_size: int, n_hidden_layers: int,
 
 class GAT(nn.Module):
 
-    def __init__(self, in_channels, hidden_channels, out_channels, heads):
+    def __init__(self, in_channels, n_layers,
+                 hidden_channels, out_channels, heads=1):
+        
         super().__init__()
-        self.conv1 = GATConv(in_channels, hidden_channels, heads, dropout=0.6)
-        self.conv2 = GATConv(hidden_channels * heads, out_channels, heads=1, concat=False, dropout=0.6)
+        self.n_layers = n_layers
+        self.layers = nn.ModuleList()
+        # input layer
+        self.layers.append(GATConv(in_channels, hidden_channels, 
+                                   heads, dropout=0.6))
+        # hidden layer(s)
+        for _ in range(n_layers-2):
+            self.layers.append(GATConv(hidden_channels*heads, hidden_channels,
+                                       heads, dropout=0.6))
+        # output layer
+        self.layers.append(GATConv(hidden_channels*heads, out_channels,
+                                   heads, concat=False, dropout=0.6))
 
     def forward(self, x, edge_index):
+        for l in range(self.n_layers-1):
+            x = F.dropout(x, p=0.6, training=self.training)
+            x = F.elu(self.layers[l](x, edge_index))
         x = F.dropout(x, p=0.6, training=self.training)
-        x = F.elu(self.conv1(x, edge_index))
-        x = F.dropout(x, p=0.6, training=self.training)
-        x = self.conv2(x, edge_index)
+        x = self.layers[-1](x, edge_index)
         return x
