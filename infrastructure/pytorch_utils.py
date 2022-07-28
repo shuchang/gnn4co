@@ -14,6 +14,9 @@ def init_gpu(use_gpu=True, gpu_id=0):
         device = torch.device("cpu")
         print("GPU not detected. Defaulting to CPU.")
 
+def to_device(tensor):
+    return tensor.to(device)
+
 def from_numpy(*args, **kwargs):
     return torch.from_numpy(*args, **kwargs).float().to(device)
 

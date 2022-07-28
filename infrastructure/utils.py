@@ -1,7 +1,7 @@
 import numpy as np
 import networkx as nx
 import torch_geometric
-from infrastructure import pytorch_utils as ptu
+from infrastructure import pytorch_utils as ptu 
 
 
 class GraphGenerator(object):
@@ -45,6 +45,6 @@ class BarabasiAlbertGraphGenerator(GraphGenerator):
         return laplacian_matrix
 
     def get(self, state):
-        data =  torch_geometric.utils.from_networkx(self.g)
+        data = torch_geometric.utils.from_networkx(self.g)
         data.x = ptu.from_numpy(state)
-        return data
+        return ptu.to_device(data)

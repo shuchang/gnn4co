@@ -51,7 +51,7 @@ class GATPolicy(BasePolicy, nn.Module):
         batch_size = action_dist.batch_shape[0]
 
         if batch_size == 1:
-            mask = torch.zeros(action_dist.param_shape)
+            mask = ptu.to_device(torch.zeros(action_dist.param_shape))
             mask[0, action_list] = 1
             allowed_action_probs = action_dist.probs.masked_fill(mask==0, 0)
             actions = torch.multinomial(allowed_action_probs.squeeze(), num_samples=1)
@@ -123,8 +123,9 @@ class GATCritic(BasePolicy, nn.Module):
         """Queries the policy with observation(s) to get selected action(s)"""
         state_values = self.forward(obs)
         batch_size = state_values.shape[0]
+
         if batch_size == 1:
-            mask = torch.zeros(state_values.shape)
+            mask = ptu.to_device(torch.zeros(state_values.shape))
             mask[0, action_list] = 1
             allowed_state_values = state_values.masked_fill(mask==0, -1e4)
         else:
