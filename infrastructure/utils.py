@@ -1,7 +1,7 @@
 import numpy as np
 import networkx as nx
 import torch_geometric
-from infrastructure import pytorch_utils as ptu 
+from infrastructure import pytorch_utils as ptu
 
 
 class GraphGenerator(object):

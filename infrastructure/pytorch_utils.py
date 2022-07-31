@@ -55,12 +55,12 @@ class GAT(nn.Module):
 
     def __init__(self, in_channels, n_layers,
                  hidden_channels, out_channels, heads=1):
-        
+
         super().__init__()
         self.n_layers = n_layers
         self.layers = nn.ModuleList()
         # input layer
-        self.layers.append(GATConv(in_channels, hidden_channels, 
+        self.layers.append(GATConv(in_channels, hidden_channels,
                                    heads, dropout=0.6))
         # hidden layer(s)
         for _ in range(n_layers-2):

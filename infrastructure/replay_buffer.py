@@ -62,7 +62,6 @@ class ReplayBuffer(object):
 
             while n_data_so_far < batch_size:
                 recent_trajectory = self.memory[index]
-                # n_data_so_far += len(recent_trajectory["reward"])
                 n_data_so_far += recent_trajectory["reward"].shape[0]
                 n_recent_trajectories += 1
                 index -= 1
