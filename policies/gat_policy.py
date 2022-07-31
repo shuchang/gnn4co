@@ -134,6 +134,7 @@ class GATCritic(BasePolicy, nn.Module):
             actions = allowed_state_values.argmax()
         else:
             actions = allowed_state_values.argmax(1, keepdim=True).squeeze(0)
+
         return ptu.to_numpy(actions)[0]
 
 
@@ -165,11 +166,19 @@ class GATCritic(BasePolicy, nn.Module):
 
         self.optimizer.zero_grad()
         loss.backward()
-    
+
         if self.grad_norm_clipping is not None: # Optional gradient clipping
             nn.utils.clip_grad_value_(self.network.parameters(), self.grad_norm_clipping)
+
         self.optimizer.step()
         return {"Training Loss": ptu.to_numpy(loss)}
+
+
+    def update_target_network(self):
+        for target_param, param in zip(
+                self.target_network.parameters(), self.network.parameters()
+        ):
+            target_param.data.copy_(param.data)
 
 
     def save(self, filepath):

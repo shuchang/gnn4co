@@ -9,6 +9,11 @@ class DQNAgent(BaseAgent):
         BaseAgent.__init__(self, config)
 
         self.actor = GATCritic(self.hyperparameters)
+        self.learning_starts = self.hyperparameters["learning_starts"]
+        self.update_freq = self.hyperparameters["update_freq"]
+        self.target_update_freq = self.hyperparameters["target_update_freq"]
+        self.step = 0
+        self.n_param_updates = 0
 
 
     def sample_from_replay_buffer(self, batch_size):
@@ -27,7 +32,17 @@ class DQNAgent(BaseAgent):
             returns:
                 train_log: dict
         """
-        train_log = self.actor.update(obs, acs, rews, next_obs, dones)
+        train_log = {}
+
+        if self.step > self.learning_starts and self.step % self.update_freq == 0:
+            train_log = self.actor.update(obs, acs, rews, next_obs, dones)
+
+            if self.n_param_updates % self.target_update_freq == 0:
+                self.actor.update_target_network()
+
+            self.n_param_updates += 1
+
+        self.step += 1
         return train_log
 
 
