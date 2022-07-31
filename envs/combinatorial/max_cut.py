@@ -112,7 +112,9 @@ class MaxCutEnv(object):
         if len(self.action_space.action_list) == 1:
             done = True
 
-        return self.graph, reward, done, {"best solution": self.best_solution}
+        return (self.graph, reward, done,
+            {"best score": self.best_score,
+            "best solution": self.best_solution.T})
 
 
     def reset(self):
