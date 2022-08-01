@@ -10,15 +10,15 @@ from infrastructure.pytorch_utils import GAT
 
 class GATPolicy(BasePolicy, nn.Module):
 
-    def __init__(self, hyperparameters):
+    def __init__(self, hparams):
 
         super().__init__()
 
-        self.ob_dim = hyperparameters["ob_dim"]
-        self.ac_dim = hyperparameters["ac_dim"]
-        self.n_layers = hyperparameters["n_layers"]
-        self.hidden_size = hyperparameters["hidden_size"]
-        self.learning_rate = hyperparameters["learning_rate"]
+        self.ob_dim = hparams["ob_dim"]
+        self.ac_dim = hparams["ac_dim"]
+        self.n_layers = hparams["n_layers"]
+        self.hidden_size = hparams["hidden_size"]
+        self.learning_rate = hparams["learning_rate"]
 
         self.network = GAT(self.ob_dim, self.n_layers, self.hidden_size, self.ac_dim)
         self.network.to(ptu.device)
@@ -82,19 +82,19 @@ class GATPolicy(BasePolicy, nn.Module):
 
 class GATCritic(BasePolicy, nn.Module):
 
-    def __init__(self, hyperparameters):
+    def __init__(self, hparams):
 
         super().__init__()
 
-        self.ob_dim = hyperparameters["ob_dim"]
-        self.ac_dim = hyperparameters["ac_dim"]
-        self.n_layers = hyperparameters["n_layers"]
-        self.hidden_size = hyperparameters["hidden_size"]
-        self.learning_rate = hyperparameters["learning_rate"]
+        self.ob_dim = hparams["ob_dim"]
+        self.ac_dim = hparams["ac_dim"]
+        self.n_layers = hparams["n_layers"]
+        self.hidden_size = hparams["hidden_size"]
+        self.learning_rate = hparams["learning_rate"]
 
-        self.double_q = hyperparameters["double_q"]
-        self.grad_norm_clipping = hyperparameters["grad_norm_clipping"]
-        self.gamma = hyperparameters["discount_rate"]
+        self.double_q = hparams["double_q"]
+        self.grad_norm_clipping = hparams["grad_norm_clipping"]
+        self.gamma = hparams["discount_rate"]
 
         self.network = GAT(self.ob_dim, self.n_layers, self.hidden_size, self.ac_dim)
         self.network.to(ptu.device)

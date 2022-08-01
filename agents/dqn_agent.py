@@ -8,10 +8,10 @@ class DQNAgent(BaseAgent):
 
         BaseAgent.__init__(self, config)
 
-        self.actor = GATCritic(self.hyperparameters)
-        self.learning_starts = self.hyperparameters["learning_starts"]
-        self.update_freq = self.hyperparameters["update_freq"]
-        self.target_update_freq = self.hyperparameters["target_update_freq"]
+        self.actor = GATCritic(self.hparams)
+        self.learning_starts = self.hparams["learning_starts"]
+        self.update_freq = self.hparams["update_freq"]
+        self.target_update_freq = self.hparams["target_update_freq"]
         self.train_steps = 0
         self.n_param_updates = 0
 

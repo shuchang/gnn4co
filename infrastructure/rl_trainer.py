@@ -22,22 +22,23 @@ class RLTrainer(object):
             config.seed = random.randint(0, 2**32-2)
         self.set_random_seeds(config.seed)
         ptu.init_gpu(config.use_GPU, config.which_GPU)
-        self.writer = SummaryWriter(config.log_dir)
+        self.writer = SummaryWriter(config.log_dir, comet_config={"disabled": False})
+        self.writer.add_hparams
 
         self.n_episodes = config.n_episodes
         self.n_steps_per_episode = config.n_steps_per_episode
-        self.batch_size = config.hyperparameters["batch_size"]
+        self.batch_size = config.hparams["batch_size"]
         self.update_learning_rate = config.update_learning_rate
         self.update_exploration = False
         self.log_metrics = config.log_metrics
 
         if agent_class == DQNAgent:
             self.update_exploration = config.update_exploration
-            self.initial_exp_rate = config.hyperparameters["initial_exploration_rate"]
-            self.final_exp_rate = config.hyperparameters["final_exploration_rate"]
-            self.final_exp_step = config.hyperparameters["final_exploration_rate"]
-            self.epsilon = config.hyperparameters["initial_exploration_rate"]
-            self.learning_starts = config.hyperparameters["learning_starts"]
+            self.initial_exp_rate = config.hparams["initial_exploration_rate"]
+            self.final_exp_rate = config.hparams["final_exploration_rate"]
+            self.final_exp_step = config.hparams["final_exploration_rate"]
+            self.epsilon = config.hparams["initial_exploration_rate"]
+            self.learning_starts = config.hparams["learning_starts"]
 
         #############
         ## ENV
@@ -45,8 +46,8 @@ class RLTrainer(object):
         self.env = co_env.make(config.env_name, n_nodes=20, m_edges=4)
         self.env.seed(config.seed)
 
-        config.hyperparameters["ob_dim"] = self.env.observation_space.shape[1]
-        config.hyperparameters["ac_dim"] = self.env.action_space.shape[1]
+        config.hparams["ob_dim"] = self.env.observation_space.shape[1]
+        config.hparams["ac_dim"] = self.env.action_space.shape[1]
 
         #############
         ## AGENT

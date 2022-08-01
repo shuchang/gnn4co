@@ -3,6 +3,7 @@ import os
 from os.path import dirname, abspath, join
 sys.path.append(dirname(dirname(abspath(__file__))))
 import time
+import comet_ml
 
 from agents.dqn_agent import DQNAgent
 from infrastructure.rl_trainer import RLTrainer
@@ -22,7 +23,7 @@ config.log_metrics = True
 config.use_GPU = True
 config.which_GPU = 0
 config.randomize_random_seed = True
-config.hyperparameters = {
+config.hparams = {
     "buffer_size": 5000,
     "learning_starts": 500,
     "batch_size": 64,
@@ -49,6 +50,7 @@ def main():
     config.log_dir = log_dir
     print("\n\n\nLOGGING TO: ", log_dir, "\n\n\n")
 
+    comet_ml.init(project_name='gnn4co')
     AGENTS = DQNAgent
     trainer = RLTrainer(config, AGENTS)
     trainer.run_training_loop()

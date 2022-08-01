@@ -9,8 +9,8 @@ class PGAgent(BaseAgent):
 
         BaseAgent.__init__(self, config)
 
-        self.gamma = self.hyperparameters["discount_rate"]
-        self.actor = GATPolicy(self.hyperparameters)
+        self.gamma = self.hparams["discount_rate"]
+        self.actor = GATPolicy(self.hparams)
 
 
     def sample_from_replay_buffer(self, batch_size):

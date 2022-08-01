@@ -5,11 +5,11 @@ class BaseAgent(object):
     def __init__(self, config):
 
         self.config = config
-        self.hyperparameters = config.hyperparameters
+        self.hparams = config.hparams
 
         self.replay_buffer = ReplayBuffer(
-            buffer_size=self.hyperparameters["buffer_size"],
-            batch_size=self.hyperparameters["batch_size"])
+            buffer_size=self.hparams["buffer_size"],
+            batch_size=self.hparams["batch_size"])
 
 
     def add_to_replay_buffer(self, trajectories):

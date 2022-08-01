@@ -9,7 +9,7 @@ class Config(object):
         self.log_metrics = None
         self.update_learning_rate = True
         self.update_exploration = True
-        self.hyperparameters = None
+        self.hparams = None
         self.use_GPU = None
         self.which_GPU = 0
         self.randomize_random_seed = True
