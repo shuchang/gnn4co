@@ -6,7 +6,7 @@ import time
 import numpy as np
 from agents.dqn_agent import DQNAgent
 from infrastructure import pytorch_utils as ptu
-# from tensorboardX import SummaryWriter
+from tensorboardX import SummaryWriter
 import envs.core as co_env
 
 
@@ -22,22 +22,22 @@ class RLTrainer(object):
             config.seed = random.randint(0, 2**32-2)
         self.set_random_seeds(config.seed)
         ptu.init_gpu(config.use_GPU, config.which_GPU)
+        self.writer = SummaryWriter(config.log_dir)
 
         self.n_episodes = config.n_episodes
         self.n_steps_per_episode = config.n_steps_per_episode
         self.batch_size = config.hyperparameters["batch_size"]
-        self.log_metrics = config.log_metrics
         self.update_learning_rate = config.update_learning_rate
         self.update_exploration = False
+        self.log_metrics = config.log_metrics
 
         if agent_class == DQNAgent:
             self.update_exploration = config.update_exploration
             self.initial_exp_rate = config.hyperparameters["initial_exploration_rate"]
             self.final_exp_rate = config.hyperparameters["final_exploration_rate"]
             self.final_exp_step = config.hyperparameters["final_exploration_rate"]
-            self.epsilon = self.initial_exp_rate
+            self.epsilon = config.hyperparameters["initial_exploration_rate"]
             self.learning_starts = config.hyperparameters["learning_starts"]
-            self.step = 0
 
         #############
         ## ENV
@@ -71,8 +71,7 @@ class RLTrainer(object):
                 print("\n\n********** Episode %i ************"%ep)
                 print("\nCollecting data for train ...")
 
-            trajectories, env_steps = self.collect_trajectories()
-            self.total_env_steps += env_steps
+            trajectories = self.collect_trajectories()
             self.agent.add_to_replay_buffer(trajectories)
 
             if ep % print_freq == 0:
@@ -80,32 +79,24 @@ class RLTrainer(object):
             train_logs = self.train_agent()
 
             if self.log_metrics:
-                print('\nBeginning logging procedure...')
+                # print('\nBeginning logging procedure...')
                 if isinstance(self.agent, DQNAgent):
                     self.perform_dqn_logging(train_logs)
                 else:
-                    self.perform_logging(trajectories, train_logs)
-
-
-    # def update_lr(ep):
-
-    def update_epsilon(self, ep):
-        eps = self.initial_exp_rate + (self.final_exp_rate - self.initial_exp_rate)*(
-            ep/self.final_exp_step)
-        self.epsilon = max(eps, self.final_exp_rate)
+                    self.perform_logging(ep, trajectories, train_logs)
 
 
     def collect_trajectories(self):
         """Collects a batch of trajectories"""
-        env_steps = 0
+        env_steps_this_batch = 0
         trajectories = []
 
-        while env_steps < self.batch_size:
+        while env_steps_this_batch < self.batch_size:
             trajectory = self.collect_trajectory()
-            env_steps += trajectory["reward"].shape[0]
+            env_steps_this_batch += trajectory["reward"].shape[0]
             trajectories.append(trajectory)
 
-        return trajectories, env_steps
+        return trajectories
 
 
     def collect_trajectory(self):
@@ -119,12 +110,11 @@ class RLTrainer(object):
             if not isinstance(self.agent, DQNAgent):
                 ac = self.agent.actor.get_action(ob, action_list)
             else:
-                if (self.step < self.learning_starts or
-                np.random.random() < self.epsilon):
+                if (self.total_env_steps < self.learning_starts or
+                    np.random.random() < self.epsilon):
                     ac = self.env.action_space.sample()
                 else:
                     ac = self.agent.actor.get_action(ob, action_list)
-                self.step += 1
 
             obs.append(ob)
             acs.append(ac)
@@ -132,13 +122,12 @@ class RLTrainer(object):
             ob, rew, done, info = self.env.step(ac)
             rews.append(rew)
             next_obs.append(ob)
+            rollout_done = 1 if done else 0 # or steps == max_trajectory_length
+            dones.append(rollout_done)
+            self.total_env_steps += 1
 
             # for key, value in info.items():
             #     print('{}: {}'.format(key, value))
-
-            rollout_done = 1 if done else 0 # or steps == max_trajectory_length
-            dones.append(rollout_done)
-
             if rollout_done:
                 break
 
@@ -150,7 +139,7 @@ class RLTrainer(object):
 
 
     def train_agent(self):
-        """Samples from the replay buffer and trains the agent"""
+        """Samples data from the replay buffer and trains the agent"""
         all_logs = []
 
         for _ in range(self.n_steps_per_episode):
@@ -165,17 +154,21 @@ class RLTrainer(object):
     def perform_dqn_logging(self, train_logs):
         """Performs logging for DQN agent"""
         logs = OrderedDict()
-        logs["Train_EnvstepsSoFar"] = self.agent.step
+        # train_steps is usually less than total_env_steps as
+        # sample_recent_data doesn't require full trajectories
+        # logs["Train_EnvstepsSoFar"] = self.agent.train_steps
         # logs["TimeSinceStart"] = time.time() - self.start_time
         logs.update(train_logs[-1])
 
         for key, value in logs.items():
-            print('{} : {}'.format(key, value))
+            # print('{} : {}'.format(key, value))
+            self.writer.add_scalar('{}'.format(key), value, self.agent.train_steps)
 
-        print('Done logging...')
+        self.writer.flush()
+        # print('Done logging...')
 
 
-    def perform_logging(self, trajectories, train_logs):
+    def perform_logging(self, ep, trajectories, train_logs):
         """Returns the training and evaluating logs for each batch of data"""
         print("\nCollecting data for eval ...")
         eval_trajectories, _ = self.collect_trajectories()
@@ -205,9 +198,19 @@ class RLTrainer(object):
         logs.update(train_logs[-1]) # last log in all logs
 
         for key, value in logs.items():
-            print('{}: {}'.format(key, value))
+            # print('{}: {}'.format(key, value))
+            self.writer.add_scalar('{}'.format(key), value, ep)
 
-        print("Done logging ...")
+        self.writer.flush()
+        # print('Done logging...')
+
+
+    # def update_lr(ep):
+
+    def update_epsilon(self, ep):
+        eps = self.initial_exp_rate + (self.final_exp_rate - self.initial_exp_rate)*(
+            ep/self.final_exp_step)
+        self.epsilon = max(eps, self.final_exp_rate)
 
 
     def set_random_seeds(self, random_seed):
