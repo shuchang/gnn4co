@@ -45,6 +45,6 @@ class BarabasiAlbertGraphGenerator(GraphGenerator):
         return laplacian_matrix
 
     def get(self, state):
-        data = torch_geometric.utils.from_networkx(self.g)
+        data = torch_geometric.utils.from_networkx(self.g).to(ptu.device)
         data.x = ptu.from_numpy(state)
-        return ptu.to_device(data)
+        return data
