@@ -171,7 +171,7 @@ class RLTrainer(object):
     def perform_logging(self, ep, trajectories, train_logs):
         """Returns the training and evaluating logs for each batch of data"""
         print("\nCollecting data for eval ...")
-        eval_trajectories, _ = self.collect_trajectories()
+        eval_trajectories = self.collect_trajectories()
 
         train_returns = [t["reward"].sum() for t in trajectories]
         eval_returns = [eval_t["reward"].sum() for eval_t in eval_trajectories]

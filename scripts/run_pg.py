@@ -1,6 +1,8 @@
+import os
 import sys
-from os.path import dirname, abspath
+from os.path import dirname, abspath, join
 sys.path.append(dirname(dirname(abspath(__file__))))
+import time
 
 from agents.pg_agent import PGAgent
 from infrastructure.rl_trainer import RLTrainer
@@ -32,7 +34,17 @@ config.hyperparameters = {
     "discount_rate": 0.99}
 
 
-if __name__ == "__main__":
+def main():
+    data_path = join(dirname(dirname(abspath(__file__))), 'data')
+    if not (os.path.exists(data_path)): os.makedirs(data_path)
+    log_dir = config.env_name + '_' + time.strftime("%m-%d_%H-%M")
+    log_dir = join(data_path, log_dir)
+    config.log_dir = log_dir
+    print("\n\n\nLOGGING TO: ", log_dir, "\n\n\n")
+
     AGENTS = PGAgent
     trainer = RLTrainer(config, AGENTS)
     trainer.run_training_loop()
+
+if __name__ == "__main__":
+    main()
