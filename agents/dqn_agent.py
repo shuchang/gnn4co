@@ -12,7 +12,7 @@ class DQNAgent(BaseAgent):
         self.learning_starts = self.hyperparameters["learning_starts"]
         self.update_freq = self.hyperparameters["update_freq"]
         self.target_update_freq = self.hyperparameters["target_update_freq"]
-        self.step = 0
+        self.train_steps = 0
         self.n_param_updates = 0
 
 
@@ -34,7 +34,8 @@ class DQNAgent(BaseAgent):
         """
         train_log = {}
 
-        if self.step > self.learning_starts and self.step % self.update_freq == 0:
+        if (self.train_steps > self.learning_starts and
+            self.train_steps % self.update_freq == 0):
             train_log = self.actor.update(obs, acs, rews, next_obs, dones)
 
             if self.n_param_updates % self.target_update_freq == 0:
@@ -42,7 +43,8 @@ class DQNAgent(BaseAgent):
 
             self.n_param_updates += 1
 
-        self.step += 1
+        self.train_steps += 1
+
         return train_log
 
 

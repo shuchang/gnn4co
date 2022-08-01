@@ -24,7 +24,7 @@ class GATPolicy(BasePolicy, nn.Module):
         self.network.to(ptu.device)
         self.optimizer = optim.Adam(self.network.parameters(), self.learning_rate)
 
-        # self.baseline = ptu.build_mlp(self.ob_dim, 1, self.n_hidden_layers, self.hidden_size)
+        # self.baseline = ptu.build_mlp(self.ob_dim, 1, self.n_layers, self.hidden_size)
         # self.baseline.to(ptu.device)
         # self.baseline_optimizer = optim.Adam(self.baseline.parameters(), self.learning_rate)
         # self.baseline_loss = nn.MSELoss()
@@ -50,7 +50,7 @@ class GATPolicy(BasePolicy, nn.Module):
         batch_size = action_dist.batch_shape[0]
 
         if batch_size == 1:
-            mask = ptu.to_device(torch.zeros(action_dist.param_shape))
+            mask = torch.zeros(action_dist.param_shape).to(ptu.device)
             mask[0, action_list] = 1
             allowed_action_probs = action_dist.probs.masked_fill(mask==0, 0)
             actions = torch.multinomial(allowed_action_probs.squeeze(), num_samples=1)
@@ -124,7 +124,7 @@ class GATCritic(BasePolicy, nn.Module):
         batch_size = state_values.shape[0]
 
         if batch_size == 1:
-            mask = ptu.to_device(torch.zeros(state_values.shape))
+            mask = torch.zeros(state_values.shape).to(ptu.device)
             mask[0, action_list] = 1
             allowed_state_values = state_values.masked_fill(mask==0, -1e4)
         else:
