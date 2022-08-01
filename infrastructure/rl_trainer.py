@@ -23,7 +23,7 @@ class RLTrainer(object):
         self.set_random_seeds(config.seed)
         ptu.init_gpu(config.use_GPU, config.which_GPU)
         self.writer = SummaryWriter(config.log_dir, comet_config={"disabled": False})
-        self.writer.add_hparams
+        self.writer.add_hparams(config.hparams, metric_dict={})
 
         self.n_episodes = config.n_episodes
         self.n_steps_per_episode = config.n_steps_per_episode
@@ -59,7 +59,7 @@ class RLTrainer(object):
         """Runs a set of training loops for the agent"""
         self.total_env_steps = 0
         self.start_time = time.time()
-        print_freq = 10 if isinstance(self.agent, DQNAgent) else 1
+        print_freq = 100 if isinstance(self.agent, DQNAgent) else 1
 
         for ep in range(self.n_episodes):
 
@@ -199,7 +199,7 @@ class RLTrainer(object):
         logs.update(train_logs[-1]) # last log in all logs
 
         for key, value in logs.items():
-            # print('{}: {}'.format(key, value))
+            print('{}: {}'.format(key, value))
             self.writer.add_scalar('{}'.format(key), value, ep)
 
         self.writer.flush()

@@ -73,7 +73,7 @@ class GATPolicy(BasePolicy, nn.Module):
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        return {"Training Loss": ptu.to_numpy(loss)}
+        return {"loss": ptu.to_numpy(loss)}
 
 
     def save(self, filepath):
@@ -171,7 +171,7 @@ class GATCritic(BasePolicy, nn.Module):
             nn.utils.clip_grad_value_(self.network.parameters(), self.grad_norm_clipping)
 
         self.optimizer.step()
-        return {"Training Loss": ptu.to_numpy(loss)}
+        return {"loss": ptu.to_numpy(loss)}
 
 
     def update_target_network(self):

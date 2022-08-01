@@ -13,7 +13,7 @@ from infrastructure.config import Config
 config = Config()
 config.seed = 1
 config.env_name = "MaxCut"
-config.n_episodes = 30
+config.n_episodes = 10
 config.n_steps_per_episode = 1
 
 config.update_learning_rate = True
@@ -30,8 +30,6 @@ config.hparams = {
     "n_layers": 3,
     "learning_rate": 1e-4,
 
-    "activation": "tanh",
-    "output_activation": "identity",
     "discount_rate": 0.99}
 
 
