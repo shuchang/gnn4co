@@ -109,7 +109,7 @@ class MaxCutEnv(object):
         # 3. Check termination criteria                            #
         ############################################################
         # TODO: fix termination criteria
-        if len(self.action_space.action_list) == 1:
+        if len(self.action_space.action_list) == 0:
             done = True
 
         return (self.graph, reward, done,
