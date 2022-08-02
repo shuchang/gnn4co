@@ -113,8 +113,8 @@ class MaxCutEnv(object):
             done = True
 
         return (self.graph, reward, done,
-            {"best score": self.best_score,
-             "best solution": self.best_solution.T})
+            {"best_score": self.best_score,
+             "best_solution": self.best_solution.T})
 
 
     def reset(self):
