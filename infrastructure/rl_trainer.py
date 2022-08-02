@@ -18,19 +18,20 @@ class RLTrainer(object):
         #############
         ## INIT
         #############
+        self.writer = SummaryWriter(config.log_dir, comet_config={"disabled": False})
+        self.writer.add_hparams(config.hparams, metric_dict={})
+
         if config.randomize_random_seed:
             config.seed = random.randint(0, 2**32-2)
         self.set_random_seeds(config.seed)
         ptu.init_gpu(config.use_GPU, config.which_GPU)
-        self.writer = SummaryWriter(config.log_dir, comet_config={"disabled": False})
-        self.writer.add_hparams(config.hparams, metric_dict={})
 
         self.n_episodes = config.n_episodes
         self.n_steps_per_episode = config.n_steps_per_episode
+        self.log_metrics = config.log_metrics
         self.batch_size = config.hparams["batch_size"]
         self.update_learning_rate = config.update_learning_rate
         self.update_exploration = False
-        self.log_metrics = config.log_metrics
 
         if agent_class == DQNAgent:
             self.update_exploration = config.update_exploration
@@ -77,6 +78,7 @@ class RLTrainer(object):
 
             if ep % print_freq == 0:
                 print("\nTraining agent ...")
+
             train_logs = self.train_agent()
 
             if self.log_metrics:
@@ -171,31 +173,31 @@ class RLTrainer(object):
 
     def perform_logging(self, ep, trajectories, train_logs):
         """Returns the training and evaluating logs for each batch of data"""
-        print("\nCollecting data for eval ...")
+        print("\nCollecting data for eval ...\n")
         eval_trajectories = self.collect_trajectories()
 
         train_returns = [t["reward"].sum() for t in trajectories]
         eval_returns = [eval_t["reward"].sum() for eval_t in eval_trajectories]
 
         # episode lengths, for logging
-        train_ep_lens = [len(t["reward"]) for t in trajectories]
-        eval_ep_lens = [len(eval_t["reward"]) for eval_t in eval_trajectories]
+        # train_ep_lens = [len(t["reward"]) for t in trajectories]
+        # eval_ep_lens = [len(eval_t["reward"]) for eval_t in eval_trajectories]
 
         logs = OrderedDict()
         logs["Eval_AverageReturn"] = np.mean(eval_returns)
         logs["Eval_StdReturn"] = np.std(eval_returns)
         logs["Eval_MaxReturn"] = np.max(eval_returns)
         logs["Eval_MinReturn"] = np.min(eval_returns)
-        logs["Eval_AverageEpLen"] = np.mean(eval_ep_lens)
+        # logs["Eval_AverageEpLen"] = np.mean(eval_ep_lens)
 
         logs["Train_AverageReturn"] = np.mean(train_returns)
         logs["Train_StdReturn"] = np.std(train_returns)
         logs["Train_MaxReturn"] = np.max(train_returns)
         logs["Train_MinReturn"] = np.min(train_returns)
-        logs["Train_AverageEpLen"] = np.mean(train_ep_lens)
+        # logs["Train_AverageEpLen"] = np.mean(train_ep_lens)
 
         logs["Train_EnvstepsSoFar"] = self.total_env_steps
-        logs["TimeSinceStart"] = time.time() - self.start_time
+        # logs["TimeSinceStart"] = time.time() - self.start_time
         logs.update(train_logs[-1]) # last log in all logs
 
         for key, value in logs.items():

@@ -13,7 +13,7 @@ from infrastructure.config import Config
 config = Config()
 config.seed = 1
 config.env_name = "MaxCut"
-config.n_episodes = 100000
+config.n_episodes = 1000000
 config.n_steps_per_episode = 1
 
 config.update_learning_rate = True
@@ -45,7 +45,7 @@ config.hparams = {
 def main():
     data_path = join(dirname(dirname(abspath(__file__))), 'data')
     if not (os.path.exists(data_path)): os.makedirs(data_path)
-    log_dir = config.env_name + '_' + time.strftime("%m-%d_%H-%M")
+    log_dir = config.env_name + '_DQN_' + time.strftime("%m-%d_%H-%M")
     log_dir = join(data_path, log_dir)
     config.log_dir = log_dir
     print("\n\n\nLOGGING TO: ", log_dir, "\n\n\n")
