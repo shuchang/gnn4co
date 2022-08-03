@@ -86,7 +86,7 @@ class RLTrainer(object):
                 if isinstance(self.agent, DQNAgent):
                     self.perform_dqn_logging(train_logs)
                 else:
-                    self.perform_logging(ep, trajectories, train_logs)
+                    self.perform_logging(ep, train_logs)
 
 
     def collect_trajectories(self):
@@ -129,8 +129,6 @@ class RLTrainer(object):
             dones.append(rollout_done)
             self.total_env_steps += 1
 
-            # for key, value in info.items():
-            #     print('{}: {}'.format(key, value))
             if rollout_done:
                 break
 
@@ -154,58 +152,63 @@ class RLTrainer(object):
         return all_logs
 
 
+    def eval_agent(self):
+        """Evaluates the agent by letting the agent interact with the env"""
+        env_steps_this_batch = 0
+        eval_best_scores = []
+
+        while env_steps_this_batch < self.batch_size:
+            ob = self.env.reset()
+
+            while True:
+                action_list = self.env.action_space.action_list
+                ac = self.agent.actor.get_action(ob, action_list)
+                ob, rew, done, info = self.env.step(ac)
+                env_steps_this_batch += 1
+
+                if done:
+                    eval_best_scores.append(info["best_score"])
+                    break
+
+        return eval_best_scores
+
+
     def perform_dqn_logging(self, train_logs):
         """Performs logging for DQN agent"""
         logs = OrderedDict()
         # train_steps is usually less than total_env_steps as
         # sample_recent_data doesn't require full trajectories
-        # logs["Train_EnvstepsSoFar"] = self.agent.train_steps
+
+        logs["Train_EnvstepsSoFar"] = self.agent.train_steps
         # logs["TimeSinceStart"] = time.time() - self.start_time
         logs.update(train_logs[-1])
 
         for key, value in logs.items():
-            # print('{} : {}'.format(key, value))
+            print('{} : {}'.format(key, value))
             self.writer.add_scalar('{}'.format(key), value, self.agent.train_steps)
 
         self.writer.flush()
-        # print('Done logging...')
 
 
-    def perform_logging(self, ep, trajectories, train_logs):
+    def perform_logging(self, ep, train_logs):
         """Returns the training and evaluating logs for each batch of data"""
-        print("\nCollecting data for eval ...\n")
-        eval_trajectories = self.collect_trajectories()
-
-        train_returns = [t["reward"].sum() for t in trajectories]
-        eval_returns = [eval_t["reward"].sum() for eval_t in eval_trajectories]
-
-        # episode lengths, for logging
-        # train_ep_lens = [len(t["reward"]) for t in trajectories]
-        # eval_ep_lens = [len(eval_t["reward"]) for eval_t in eval_trajectories]
+        eval_best_scores = self.eval_agent()
 
         logs = OrderedDict()
-        logs["Eval_AverageReturn"] = np.mean(eval_returns)
-        logs["Eval_StdReturn"] = np.std(eval_returns)
-        logs["Eval_MaxReturn"] = np.max(eval_returns)
-        logs["Eval_MinReturn"] = np.min(eval_returns)
-        # logs["Eval_AverageEpLen"] = np.mean(eval_ep_lens)
+        logs["Eval_AverageBestScore"] = np.mean(eval_best_scores)
+        logs["Eval_StdBestScore"] = np.std(eval_best_scores)
+        logs["Eval_MaxBestScore"] = np.max(eval_best_scores)
+        logs["Eval_MinBestScore"] = np.min(eval_best_scores)
 
-        logs["Train_AverageReturn"] = np.mean(train_returns)
-        logs["Train_StdReturn"] = np.std(train_returns)
-        logs["Train_MaxReturn"] = np.max(train_returns)
-        logs["Train_MinReturn"] = np.min(train_returns)
-        # logs["Train_AverageEpLen"] = np.mean(train_ep_lens)
-
-        logs["Train_EnvstepsSoFar"] = self.total_env_steps
+        # logs["Train_EnvstepsSoFar"] = self.total_env_steps
         # logs["TimeSinceStart"] = time.time() - self.start_time
-        logs.update(train_logs[-1]) # last log in all logs
+        logs.update(train_logs[-1]) # for n_steps_per_episode > 1
 
         for key, value in logs.items():
             print('{}: {}'.format(key, value))
             self.writer.add_scalar('{}'.format(key), value, ep)
 
         self.writer.flush()
-        # print('Done logging...')
 
 
     # def update_lr(ep):
