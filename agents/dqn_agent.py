@@ -26,7 +26,7 @@ class DQNAgent(BaseAgent):
             params:
                 obs: list\n
                 acs: np.ndarray\n
-                rews: np.ndarray\n
+                rews: list\n
                 next_obs: list\n
                 dones: np.ndarray\n
             returns:

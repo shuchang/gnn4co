@@ -97,15 +97,17 @@ def _trajectories_to_data(trajectories: list):
         returns:
             obs: list\n
             acs: np.ndarray\n
-            rews: np.ndarray\n
+            rews: list\n
             next_obs: list\n
             dones: np.ndarray
     """
-    obs, next_obs = [], []
+    obs, rews, next_obs = [], [], []
+
     for t in trajectories:
         obs.extend(t["observation"])
+        rews.append(t["reward"])
         next_obs.extend(t["next_observation"])
+
     acs = np.concatenate([t["action"] for t in trajectories])
-    rews = np.concatenate([t["reward"] for t in trajectories])
     dones = np.concatenate([t["done"] for t in trajectories])
     return obs, acs, rews, next_obs, dones

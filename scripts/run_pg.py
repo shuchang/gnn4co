@@ -30,7 +30,8 @@ config.hparams = {
     "n_layers": 3,
     "learning_rate": 1e-4,
 
-    "discount_rate": 0.99}
+    "discount_rate": 0.99,
+    "reward_to_go": True}
 
 
 def main():
