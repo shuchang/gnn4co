@@ -133,10 +133,10 @@ class RLTrainer(object):
                 break
 
         return {"observation" : obs,
-                "action" : np.array(acs, dtype=np.float32),
-                "reward" : np.array(rews, dtype=np.float32),
+                "action" : np.array(acs),
+                "reward" : np.array(rews),
                 "next_observation": next_obs,
-                "done": np.array(dones, dtype=np.float32)}
+                "done": np.array(dones)}
 
 
     def train_agent(self):
