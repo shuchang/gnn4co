@@ -48,3 +48,13 @@ class BarabasiAlbertGraphGenerator(GraphGenerator):
         data = torch_geometric.utils.from_networkx(self.g).to(ptu.device)
         data.x = ptu.from_numpy(state)
         return data
+
+
+############################################
+############################################
+
+def normalize(data, mean, std, eps=1e-8):
+    return (data - mean)/(std + eps)
+
+def unnormalize(data, mean, std):
+    return data*std + mean
