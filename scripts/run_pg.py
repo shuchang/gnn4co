@@ -31,7 +31,10 @@ config.hparams = {
     "learning_rate": 1e-4,
 
     "discount_rate": 0.99,
-    "reward_to_go": True}
+    "reward_to_go": True,
+    "nn_baseline": False,
+    "standardize_advantages": True,
+    "gae_lambda": None}
 
 
 def main():
@@ -42,7 +45,7 @@ def main():
     config.log_dir = log_dir
     print("\n\n\nLOGGING TO: ", log_dir, "\n\n\n")
 
-    comet_ml.init(project_name='gnn4co')
+    comet_ml.init(project_name='gnn4co_pg')
     AGENTS = PGAgent
     trainer = RLTrainer(config, AGENTS)
     trainer.run_training_loop()

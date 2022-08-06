@@ -50,7 +50,7 @@ def main():
     config.log_dir = log_dir
     print("\n\n\nLOGGING TO: ", log_dir, "\n\n\n")
 
-    comet_ml.init(project_name='gnn4co')
+    comet_ml.init(project_name='gnn4co_dqn')
     AGENTS = DQNAgent
     trainer = RLTrainer(config, AGENTS)
     trainer.run_training_loop()
