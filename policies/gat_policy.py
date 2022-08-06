@@ -20,14 +20,17 @@ class GATPolicy(BasePolicy, nn.Module):
         self.hidden_size = hparams["hidden_size"]
         self.learning_rate = hparams["learning_rate"]
 
+        self.nn_baseline = hparams["nn_baseline"]
+
         self.network = GAT(self.ob_dim, self.n_layers, self.hidden_size, self.ac_dim)
         self.network.to(ptu.device)
         self.optimizer = optim.Adam(self.network.parameters(), self.learning_rate)
 
-        # self.baseline = ptu.build_mlp(self.ob_dim, 1, self.n_layers, self.hidden_size)
-        # self.baseline.to(ptu.device)
-        # self.baseline_optimizer = optim.Adam(self.baseline.parameters(), self.learning_rate)
-        # self.baseline_loss = nn.MSELoss()
+        if self.nn_baseline:
+            self.baseline = GAT(self.ob_dim, self.n_layers, self.hidden_size, self.ac_dim)
+            self.baseline.to(ptu.device)
+            self.baseline_optimizer = optim.Adam(self.baseline.parameters(), self.learning_rate)
+            self.baseline_loss = nn.MSELoss()
 
 
     def forward(self, obs, batch_size=1):
@@ -59,21 +62,44 @@ class GATPolicy(BasePolicy, nn.Module):
             raise NotImplementedError
 
 
-    def update(self, obs, actions, rewards):
+    def update(self, obs, actions, advantages, q_values):
         """Runs a learning iteration for the policy"""
         assert len(obs) == actions.shape[0]
         batch_size = len(obs)
         loader = Batch.from_data_list(obs)
         actions = ptu.from_numpy(actions)
-        rewards = ptu.from_numpy(rewards)
+        advantages = ptu.from_numpy(advantages)
 
         action_dist = self.forward(loader, batch_size)
-        loss = -torch.mul(action_dist.log_prob(actions), rewards).mean()
+        loss = -torch.mul(action_dist.log_prob(actions), advantages).mean()
 
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        return {"loss": ptu.to_numpy(loss)}
+        train_log = {"loss": ptu.to_numpy(loss)}
+
+        if self.nn_baseline:
+            q_values_normalized = (q_values - q_values.mean())/q_values.std()
+            q_values = ptu.from_numpy(q_values_normalized)
+
+            pred = self.baseline(loader.x, loader.edge_index).view(batch_size, -1)
+            pred = pred.mean(1) # average pooling
+            loss_baseline = self.baseline_loss(pred, q_values).sum()
+
+            self.baseline_optimizer.zero_grad()
+            loss_baseline.backward()
+            self.baseline_optimizer.step()
+            train_log.update({"loss_baseline": ptu.to_numpy(loss_baseline)})
+
+        return train_log
+
+
+    def run_baseline_prediction(self, obs):
+        batch_size = len(obs)
+        loader = Batch.from_data_list(obs)
+        pred = self.baseline(loader.x, loader.edge_index).view(batch_size, -1)
+        pred = pred.mean(1) # average pooling
+        return ptu.to_numpy(pred)
 
 
     def save(self, filepath):

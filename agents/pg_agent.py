@@ -1,6 +1,7 @@
 import numpy as np
 from policies.gat_policy import GATPolicy
 from agents.base_agent import BaseAgent
+from infrastructure.utils import normalize, unnormalize
 
 
 class PGAgent(BaseAgent):
@@ -11,6 +12,10 @@ class PGAgent(BaseAgent):
 
         self.gamma = self.hparams["discount_rate"]
         self.reward_to_go = self.hparams["reward_to_go"]
+        self.nn_baseline = self.hparams["nn_baseline"]
+        self.standardize_advantages = self.hparams["standardize_advantages"]
+        self.gae_lambda = self.hparams["gae_lambda"]
+
         self.actor = GATPolicy(self.hparams)
 
 
@@ -31,12 +36,18 @@ class PGAgent(BaseAgent):
                 train_log: dict
         """
         q_values = self.calculate_q_values(rews)
-        train_log = self.actor.update(obs, acs, q_values)
+        advantages = self.estimate_advantage(obs, rews, q_values, dones)
+        train_log = self.actor.update(obs, acs, advantages, q_values)
         return train_log
 
 
     def calculate_q_values(self, rews):
-        """Monte Carlo estimation of the Q function"""
+        """Monte Carlo estimation of the Q function\n
+            param:
+                rews: list of length batch_size\n
+            return:
+                q_values: np.ndarray with shape (batch_size*traj_len, )
+        """
         if not self.reward_to_go:
             discounted_returns = [self._discounted_return(r) for r in rews]
             q_values = np.concatenate(discounted_returns).astype('float32')
@@ -45,6 +56,42 @@ class PGAgent(BaseAgent):
             q_values = np.concatenate(discounted_cumsums).astype('float32')
 
         return q_values
+
+
+    def estimate_advantage(self, obs, rews, q_values, dones):
+        """Computes advantages using GAE or Q function subtracting a value function"""
+        if self.nn_baseline:
+            # estimate the value function with nn_baseline
+            values = self.actor.run_baseline_prediction(obs)
+            assert values.ndim == q_values.ndim
+            values_normalized = normalize(values, values.mean(), values.std())
+            values = unnormalize(values_normalized, q_values.mean(), q_values.std())
+
+            if self.gae_lambda is None:
+                advantages = q_values - values
+            else:
+                values = np.append(values, [0])
+                rews = np.concatenate(rews)
+                batch_size = len(obs)
+                advantages = np.zeros(batch_size + 1)
+
+                for i in reversed(range(batch_size)):
+                    if dones[i] == 1:
+                        delta = rews[i] - values[i]
+                    else:
+                        delta = rews[i] + self.gamma*values[i+1] - values[i]
+
+                    advantages[i] = delta + self.gamma*self.gae_lambda*advantages[i+1]
+
+                advantages = advantages[:-1] # remove dummy advantage
+
+        else:
+            advantages = q_values.copy()
+
+        if self.standardize_advantages:
+            advantages = normalize(advantages, advantages.mean(), advantages.std())
+
+        return advantages
 
 
     def save(self, path):
