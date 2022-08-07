@@ -32,7 +32,7 @@ config.hparams = {
 
     "discount_rate": 0.99,
     "reward_to_go": True,
-    "nn_baseline": False,
+    "nn_baseline": True,
     "standardize_advantages": True,
     "gae_lambda": None}
 

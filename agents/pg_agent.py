@@ -21,17 +21,17 @@ class PGAgent(BaseAgent):
 
     def sample_from_replay_buffer(self, batch_size):
         """Draws recent data samples from the replay buffer"""
-        return self.replay_buffer.sample_recent_data(batch_size, return_full_trajectory=True)
+        return self.replay_buffer.sample_recent_data(batch_size, return_full_traj=True)
 
 
     def train(self, obs, acs, rews, next_obs, dones):
-        """Trains the policy gradient agent\n
+        """Trains the policy gradient agent with estimated advantages\n
             params:
-                obs: list\n
-                acs: np.ndarray\n
-                rews: list\n
-                next_obs: list\n
-                dones: np.ndarray\n
+                obs: list of length (batch_size)\n
+                acs: np.ndarray of shape (batch_size, )\n
+                rews (unconcatenated): list of length (n_batch)\n
+                next_obs: list of length (batch_size)\n
+                dones: np.ndarray of shape (batch_size, )\n
             returns:
                 train_log: dict
         """
@@ -42,11 +42,11 @@ class PGAgent(BaseAgent):
 
 
     def calculate_q_values(self, rews):
-        """Monte Carlo estimation of the Q function\n
+        """Runs the Monte Carlo estimation of the Q function\n
             param:
-                rews: list of length batch_size\n
+                rews (unconcatenated): list of length (n_batch)\n
             return:
-                q_values: np.ndarray with shape (batch_size*traj_len, )
+                q_values: np.ndarray with shape (batch_size, )
         """
         if not self.reward_to_go:
             discounted_returns = [self._discounted_return(r) for r in rews]
@@ -59,10 +59,10 @@ class PGAgent(BaseAgent):
 
 
     def estimate_advantage(self, obs, rews, q_values, dones):
-        """Computes advantages using GAE or Q function subtracting a value function"""
+        """Computes advantages using GAE or the Q function minus the value function"""
         if self.nn_baseline:
             # estimate the value function with nn_baseline
-            values = self.actor.run_baseline_prediction(obs)
+            values = self.actor.get_baseline_prediction(obs)
             assert values.ndim == q_values.ndim
             values_normalized = normalize(values, values.mean(), values.std())
             values = unnormalize(values_normalized, q_values.mean(), q_values.std())
@@ -100,10 +100,12 @@ class PGAgent(BaseAgent):
 
     def _discounted_return(self, reward):
         """Calculates the discounted returns for a trajectory\n
-            Input:
-                np.ndarray reward {r_0, r_1, ..., r_T} for a trajectory of len T\n
-            Output:
-                np.ndarray where each index t contains sum_{t'=0}^T gamma^{t'} r_{t'}
+            param:
+                reward: np.ndarray reward {r_0, r_1, ..., r_T}
+                for a trajectory of len T\n
+            return:
+                discounted_return: np.ndarray where each index t
+                contains sum_{t'=0}^T gamma^{t'} r_{t'}
         """
         traj_len = reward.shape[0]
         discount = self.gamma ** np.arange(traj_len)
@@ -113,7 +115,14 @@ class PGAgent(BaseAgent):
 
 
     def _discounted_cumsum(self, reward):
-        """"""
+        """Calculates the discounted cummulated sum for a trajectory\n
+            param:
+                reward: np.ndarray reward {r_0, r_1, ..., r_T}
+                for a trajectory of len T\n
+            return:
+                discounted_cumsum: np.ndarray where each index t
+                contains sum_{t'=t}^T gamma^(t'-t) * r_{t'}
+        """
         traj_len = reward.shape[0]
         discounted_cumsum = np.zeros(traj_len)
 

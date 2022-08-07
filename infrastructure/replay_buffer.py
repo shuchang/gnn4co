@@ -51,11 +51,11 @@ class ReplayBuffer(object):
         return obs, self.acs[indices], self.rews[indices], next_obs, self.dones[indices]
 
 
-    def sample_recent_data(self, batch_size, return_full_trajectory=True):
+    def sample_recent_data(self, batch_size, return_full_traj=True):
         """Draws a recent sample from the replay buffer
            Policy-based agents: data are from full episodes
         """
-        if return_full_trajectory:
+        if return_full_traj:
             n_recent_trajectories = 0
             index = -1
             n_data_so_far = 0
@@ -91,15 +91,16 @@ class ReplayBuffer(object):
     #####################################################
 
 def _trajectories_to_data(trajectories: list):
-    """Convert lists of trajectories to the training data\n
+    """Converts lists of trajectories to the training data\n
         param:
-            trajectories: list of trajectories\n
+            trajectories: list of length (n_batch)\n
         returns:
-            obs: list\n
-            acs: np.ndarray\n
-            rews: list\n
-            next_obs: list\n
-            dones: np.ndarray
+            obs: list of length (batch_size)\n
+            acs: np.ndarray of shape (batch_size, )\n
+            rews (unconcatenated): list of length (n_batch),
+            whose element is a np.ndarray of shape (traj_len, )\n
+            next_obs: list of length (batch_size)\n
+            dones: np.ndarray of shape (batch_size, )
     """
     obs, rews, next_obs = [], [], []
 

@@ -34,12 +34,13 @@ class GATPolicy(BasePolicy, nn.Module):
 
 
     def forward(self, obs, batch_size=1):
-        """Returns the distributions of batches of actions
+        """Returns the distributions of batches of actions\n
             params:
-                obs.x: shape (n_nodes, ob_dim)\n
-                obs.edge_index: shape (2, n_edges)\n
-            returns:
-                action_dist: shape (batch_size*n_nodes, ac_dim)->(batch_size, n_nodes)
+                obs.x: tensor of shape (n_nodes, ob_dim)\n
+                obs.edge_index: tensor of shape (2, n_edges)\n
+            return:
+                action_dist.logits: tensor of shape
+                (batch_size*n_nodes, ac_dim)->(batch_size, n_nodes)
         """
         logits = self.network(obs.x, obs.edge_index).view(batch_size, -1)
         action_dist = distributions.Categorical(logits=logits)
@@ -63,7 +64,15 @@ class GATPolicy(BasePolicy, nn.Module):
 
 
     def update(self, obs, actions, advantages, q_values):
-        """Runs a learning iteration for the policy"""
+        """Runs a learning iteration for the policy\n
+            params:
+                obs: list of length (batch_size)\n
+                actions: np.ndarray of shape (batch_size, )\n
+                advantages: np.ndarray of shape (batch_size, )\n
+                q_values: np.ndarray of shape (batch_size,)\n
+            return:
+                train_log: dict
+        """
         assert len(obs) == actions.shape[0]
         batch_size = len(obs)
         loader = Batch.from_data_list(obs)
@@ -94,7 +103,14 @@ class GATPolicy(BasePolicy, nn.Module):
         return train_log
 
 
-    def run_baseline_prediction(self, obs):
+    @torch.no_grad()
+    def get_baseline_prediction(self, obs):
+        """Runs the forward method of baseline to get the predicted value function\n
+            param:
+                obs: list of length (batch_size)
+            return:
+                pred: np.ndarray of shape (batch_size, )
+        """
         batch_size = len(obs)
         loader = Batch.from_data_list(obs)
         pred = self.baseline(loader.x, loader.edge_index).view(batch_size, -1)
