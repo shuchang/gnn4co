@@ -48,6 +48,7 @@ class PGAgent(BaseAgent):
             return:
                 q_values: np.ndarray with shape (batch_size, )
         """
+        # concatenate rewards with discounts
         if not self.reward_to_go:
             discounted_returns = [self._discounted_return(r) for r in rews]
             q_values = np.concatenate(discounted_returns).astype('float32')
