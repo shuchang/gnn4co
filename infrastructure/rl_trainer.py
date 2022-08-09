@@ -46,6 +46,7 @@ class RLTrainer(object):
         #############
         self.env = co_env.make(config.env_name, n_nodes=20, m_edges=4)
         self.env.seed(config.seed)
+        self.max_traj_len = 10
 
         config.hparams["ob_dim"] = self.env.observation_space.shape[1]
         config.hparams["ac_dim"] = self.env.action_space.shape[1]
@@ -105,6 +106,7 @@ class RLTrainer(object):
     def collect_trajectory(self):
         """Collects one trajectory by letting the agent interact with the env"""
         obs, acs, rews, next_obs, dones = [], [], [], [], []
+        step = 0
         ob = self.env.reset()
 
         while True:
@@ -125,8 +127,9 @@ class RLTrainer(object):
             ob, rew, done, info = self.env.step(ac)
             rews.append(rew)
             next_obs.append(ob)
-            rollout_done = 1 if done else 0 # or steps == max_trajectory_length
             dones.append(rollout_done)
+            rollout_done = 1 if done or step == self.max_traj_len else 0
+            step += 1
             self.total_env_steps += 1
 
             if rollout_done:
