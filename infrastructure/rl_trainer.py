@@ -48,6 +48,7 @@ class RLTrainer(object):
         self.env.seed(config.seed)
         self.max_traj_len = 10
 
+        config.hparams["n_nodes"] = self.env.n_nodes
         config.hparams["ob_dim"] = self.env.observation_space.shape[1]
         config.hparams["ac_dim"] = self.env.action_space.shape[1]
 
@@ -127,8 +128,8 @@ class RLTrainer(object):
             ob, rew, done, info = self.env.step(ac)
             rews.append(rew)
             next_obs.append(ob)
-            dones.append(rollout_done)
             rollout_done = 1 if done or step == self.max_traj_len else 0
+            dones.append(rollout_done)
             step += 1
             self.total_env_steps += 1
 

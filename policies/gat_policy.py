@@ -14,6 +14,7 @@ class GATPolicy(BasePolicy, nn.Module):
 
         super().__init__()
 
+        self.n_nodes = hparams["n_nodes"]
         self.ob_dim = hparams["ob_dim"]
         self.ac_dim = hparams["ac_dim"]
         self.n_layers = hparams["n_layers"]
@@ -27,7 +28,8 @@ class GATPolicy(BasePolicy, nn.Module):
         self.optimizer = optim.Adam(self.network.parameters(), self.learning_rate)
 
         if self.nn_baseline:
-            self.baseline = GAT(self.ob_dim, self.n_layers, self.hidden_size, self.ac_dim)
+            # self.baseline = GAT(self.ob_dim, self.n_layers, self.hidden_size, self.ac_dim)
+            self.baseline = ptu.build_mlp(self.n_nodes, 1, self.n_layers, self.hidden_size)
             self.baseline.to(ptu.device)
             self.baseline_optimizer = optim.Adam(self.baseline.parameters(), self.learning_rate)
             self.baseline_loss = nn.MSELoss()
@@ -91,9 +93,9 @@ class GATPolicy(BasePolicy, nn.Module):
             q_values_normalized = (q_values - q_values.mean())/q_values.std()
             q_values = ptu.from_numpy(q_values_normalized)
 
-            pred = self.baseline(loader.x, loader.edge_index).view(batch_size, -1)
-            pred = pred.mean(1) # average pooling
-            loss_baseline = self.baseline_loss(pred, q_values).sum()
+            observations = torch.cat([ob.x for ob in obs]).view(batch_size, -1)
+            pred = self.baseline(observations)
+            loss_baseline = self.baseline_loss(pred.squeeze(), q_values).sum()
 
             self.baseline_optimizer.zero_grad()
             loss_baseline.backward()
@@ -112,10 +114,9 @@ class GATPolicy(BasePolicy, nn.Module):
                 pred: np.ndarray of shape (batch_size, )
         """
         batch_size = len(obs)
-        loader = Batch.from_data_list(obs)
-        pred = self.baseline(loader.x, loader.edge_index).view(batch_size, -1)
-        pred = pred.mean(1) # average pooling
-        return ptu.to_numpy(pred)
+        observations = torch.cat([ob.x for ob in obs]).view(batch_size, -1)
+        pred = self.baseline(observations)
+        return ptu.to_numpy(pred.squeeze())
 
 
     def save(self, filepath):
